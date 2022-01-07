@@ -1,0 +1,152 @@
+﻿@page "/"
+
+@using TmtsChecker.Data
+@using TmtsChecker.Models
+@inject IScanResultService TmdResultService
+@inject ISnackbar Snackbar
+
+<PageTitle>Index</PageTitle>
+
+@*<input type="checkbox" @onchange="eventArgs => { ScanSrcChanged(eventArgs.Value); }" /> TMD / TSD*@
+
+<MudGrid>
+    <MudItem xs="12" sm="6" md="6">
+        <MudTextField @bind-Value="tmdResultFolder" Label="TM Path" Variant="Variant.Outlined"></MudTextField>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="6">
+        <MudTextField @bind-Value="tsdResultFolder" Label="TS Path" Variant="Variant.Outlined"></MudTextField>
+    </MudItem>
+</MudGrid>
+<div class="p-1">
+    <button class="btn btn-outline-danger"
+            @onclick="@(()=>getScanItemList(true))">
+        <span class="oi oi-eye"> Show TM</span>
+    </button>
+    <button class="btn btn-outline-danger"
+            @onclick="@(()=>getScanItemList(false))">
+        <span class="oi oi-eye"> Show TS</span>
+    </button>
+</div>
+
+
+@if (scanItemList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-4">
+            <MudPaper Class="pa-4  ma-2">
+                <MudChart ChartType="ChartType.Pie" InputData="@pieDataList.ToArray()" @bind-SelectedIndex="pie_Index" InputLabels="@pieLabelList.ToArray()"  />
+            </MudPaper>
+            <MudPaper Class="pa-4  ma-2">
+                <MudChart ChartType="ChartType.Donut" InputData="@donutDataList.ToArray()" @bind-SelectedIndex="donut_Index" InputLabels="@donutLabelList.ToArray()"  />
+            </MudPaper>
+        </div>
+        <div class="col-sm-8">
+            @foreach (var scanStatus in Enum.GetValues<ScanResult.ScanStatus>())
+            {        
+                <MudPaper Class="pa-4 ma-1" Elevation="3">        
+                    <MudAlert Severity="Severity.Info">
+                        @scanStatus (@scanItemList.Where(item=>item.Status==scanStatus).Count())
+                    </MudAlert>
+                    @foreach (var scanItem in scanItemList.Where(item=>item.Status==scanStatus))
+                    {
+                        <MudChip title="@scanItem.Ip">@scanItem.Hostname</MudChip>        
+                    }
+                </MudPaper>        
+            }
+        </div>
+      </div>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Hostname</th>
+                <th>Ip</th>
+                <th>Status</th>
+                <th>IsComplete</th>
+                <th>ResultSize</th>
+                <th>FinishTime</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var scanItem in scanItemList)
+            {
+                <tr>
+                    <td>@scanItem.Hostname</td>
+                    <td>@scanItem.Ip</td>
+                    <td>@scanItem.Status</td>
+                    <td>@scanItem.IsComplete</td>
+                    <td>@(scanItem.IsComplete ? scanItem.ResultSize + " MB" : "")</td>
+                    <td>@(scanItem.IsComplete ? scanItem.FinishTime.ToString() : "")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private Timer timer;
+    private int timerInterval=10000;
+    private bool isTmd;
+
+    private List<ScanResult> scanItemList;
+    //private bool isTmd = true;
+    private string tmdResultFolder = @"C:\Users\user\Downloads\TMTS_2022_AK\TMD_Result";
+    private string tsdResultFolder = @"C:\Users\user\Downloads\TMTS_2022_AK\TSD_Result";
+
+    private int pie_Index = -1; //default value cannot be 0 -> first selectedindex is 0.
+    List<double> pieDataList = new List<double>();
+    List<string> pieLabelList = new List<string>();
+    private int donut_Index = -1; //default value cannot be 0 -> first selectedindex is 0.
+    List<double> donutDataList = new List<double>();
+    List<string> donutLabelList = new List<string>();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        isTmd = true;        
+        //use timer to upload the data periodically
+        timer = new Timer(async (object stateInfo) =>
+            {                
+                await getScanItemList(isTmd);
+            // Note that the following line is necessary because otherwise
+            // Blazor would not recognize the state change and not refresh the UI
+            await InvokeAsync(() =>
+                    {
+                        StateHasChanged();
+                    });
+            }, new AutoResetEvent(false), 0, timerInterval);
+    }    
+
+    private async Task getScanItemList(bool isTmd)
+    {
+        this.isTmd = isTmd;
+        scanItemList = await (isTmd ? TmdResultService.ScanFolderAsync(tmdResultFolder, "aptcheck.exe", ".zip")
+                                    : TmdResultService.ScanFolderAsync(tsdResultFolder, "ThreatSonar.exe", ".report_bundle"));
+        //cnt for pie chart
+        pieDataList.Clear();
+        pieLabelList.Clear();
+        foreach (var enumVal in Enum.GetValues<ScanResult.ScanStatus>())
+        {
+            pieDataList.Add(Convert.ToDouble(scanItemList.Where(sitem=>sitem.Status==enumVal).Count()));
+            pieLabelList.Add(enumVal.ToString());
+        }
+        //cnt for donut chart
+        donutDataList.Clear();
+        donutLabelList.Clear();
+        foreach (var group in scanItemList.GroupBy(item=> (item.Ip??string.Empty).Contains(".") ? item.Ip.Substring(0,item.Ip.LastIndexOf(".")) : "NAN"))
+        {
+            donutDataList.Add(Convert.ToDouble(group.Count()));
+            donutLabelList.Add(group.Key);
+        }
+        //
+        timer.Change(timerInterval, timerInterval);
+        Snackbar.Add($"Data updated :{DateTime.Now.ToString()}", Severity.Success);
+    }
+}
+
