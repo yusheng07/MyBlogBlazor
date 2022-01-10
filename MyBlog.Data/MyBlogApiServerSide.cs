@@ -116,15 +116,16 @@ namespace MyBlog.Data
                     currentPost.Text = post.Text;
                     var post_tagIds = post.Tags.Select(t => t.Id);
                     currentPost.Tags = context.Tags.Where(t => post_tagIds.Contains(t.Id)).ToList();
+                    currentPost.Category = await context.Categories.FirstOrDefaultAsync(c => c.Id == post.Category.Id);
+                    await context.SaveChangesAsync();
                 }
                 else
                 {
                     context.Entry(item).State = EntityState.Modified;
                 }
             }
-
-            context.Remove(item);
             await context.SaveChangesAsync();
+            return item;
         }
 
 
