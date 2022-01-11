@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace MyBlog.Data
 {
-    internal class MyBlogApiServerSide : IMyBlogApi
+    public class MyBlogApiServerSide : IMyBlogApi
     {
         IDbContextFactory<MyBlogDbContext> factory;
         public MyBlogApiServerSide(IDbContextFactory<MyBlogDbContext> factory)
@@ -96,6 +96,7 @@ namespace MyBlog.Data
         }
         #endregion
 
+        #region SaveItem
         private async Task<IMyBlogItem> SaveItem(IMyBlogItem item)
         {
             using var context = factory.CreateDbContext();
@@ -117,7 +118,7 @@ namespace MyBlog.Data
                     var post_tagIds = post.Tags.Select(t => t.Id);
                     currentPost.Tags = context.Tags.Where(t => post_tagIds.Contains(t.Id)).ToList();
                     currentPost.Category = await context.Categories.FirstOrDefaultAsync(c => c.Id == post.Category.Id);
-                    await context.SaveChangesAsync();
+                    //await context.SaveChangesAsync();
                 }
                 else
                 {
@@ -128,23 +129,20 @@ namespace MyBlog.Data
             return item;
         }
 
-
-
-
-
-        public Task<BlogPost> SaveBlogPostAsync(BlogPost item)
+        public async Task<BlogPost> SaveBlogPostAsync(BlogPost item)
         {
-            throw new NotImplementedException();
+            return await SaveItem(item) as BlogPost;
         }
 
-        public Task<Category> SaveCategoryAsync(Category item)
+        public async Task<Category> SaveCategoryAsync(Category item)
         {
-            throw new NotImplementedException();
+            return await SaveItem(item) as Category;
         }
 
-        public Task<Tag> SaveTagAsync(Tag item)
+        public async Task<Tag> SaveTagAsync(Tag item)
         {
-            throw new NotImplementedException();
-        }
+            return await SaveItem(item) as Tag;
+        } 
+        #endregion
     }
 }

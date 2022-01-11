@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.EntityFrameworkCore;
+using MyBlog.Data;
+using MyBlog.Data.Interfaces;
 using MyBlogServerSide.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,8 +11,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
+builder.Services.AddDbContextFactory<MyBlogDbContext>(options => 
+    options.UseSqlite($"Data Source = ../MyBlog.db"));
+builder.Services.AddScoped<IMyBlogApi, MyBlogApiServerSide>();
 
 var app = builder.Build();
+
+var factory = app.Services.GetRequiredService<IDbContextFactory<MyBlogDbContext>>();
+factory.CreateDbContext().Database.Migrate();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
