@@ -3,11 +3,16 @@
 @using MyBlog.Data.Models
 @inject IMyBlogApi api
 
+
+
 <button @onclick="AddSomePosts"> Add Some Posts</button>
 <ul>
     @foreach (var item in posts)
     {
-        <li>@item.Title</li>
+        @*<li>@item.Title</li>*@
+        <li>
+            <a href="/Post/@item.Id">@item.Title</a>
+        </li>
     }
 </ul>
 

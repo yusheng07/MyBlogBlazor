@@ -1,0 +1,33 @@
+﻿@page "/post/{BlogPostId:int}"
+@inject IMyBlogApi api
+@inject NavigationManager navman
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+
+@if (blogPost!=null)
+{
+    <Title Value="@blogPost.Title"></Title>
+
+    <PageTitle>@blogPost.Title</PageTitle>
+    <HeadContent>
+      <meta property="og:title" content="@blogPost.Title">
+      <meta property="og:description" content="@(new string(blogPost.Text.Take(100).ToArray()))" />
+      <meta property="og:image" content="@($"{navman.BaseUri}/pathtoanimage.png")" />
+      <meta property="og:url" content="@navman.Uri" />
+      <meta name="twitter:card" content="@(new string(blogPost.Text.Take(100).ToArray()))" />
+      <h3>@blogPost.Title</h3>
+      @((MarkupString)blogPost.Text)
+    </HeadContent>
+}
+
+@code {
+    [Parameter]
+    public int blogPostId { get; set; }
+
+    public BlogPost blogPost { get; set; }
+
+    protected async override Task OnParametersSetAsync()
+    {
+        blogPost = await api.GetBlogPostAsync(blogPostId);
+        await base.OnParametersSetAsync();
+    }
+}
