@@ -11,8 +11,8 @@ using MyBlog.Data;
 namespace MyBlog.Data.Migrations
 {
     [DbContext(typeof(MyBlogDbContext))]
-    [Migration("20220107084846_InitialDbMigration")]
-    partial class InitialDbMigration
+    [Migration("20220118031654_initDB")]
+    partial class initDB
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
