@@ -121,6 +121,8 @@ else
                         StateHasChanged();
                     });
             }, new AutoResetEvent(false), 0, timerInterval);
+        //
+        await base.OnInitializedAsync();
     }    
 
     private async Task getScanItemList(bool isTmd)
