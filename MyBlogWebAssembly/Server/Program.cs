@@ -1,8 +1,28 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.EntityFrameworkCore;
+using MyBlog.Data;
+using MyBlog.Data.Interfaces;
+using MyBlog.Data.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+//<AddMyBlogDataServices>
+builder.Services.AddDbContextFactory<MyBlogDbContext>(options =>
+                        options.UseSqlite(builder.Configuration.GetConnectionString("MyBlogDB")));
+builder.Services.AddScoped<IMyBlogApi, MyBlogApiServerSide>();
+//<AddMyBlogDataServices>
+
+//<Identity>
+builder.Services.AddDbContext<MyBlogDbContext>(options =>
+                        options.UseSqlite(builder.Configuration.GetConnectionString("MyBlogDB")));
+builder.Services.AddDefaultIdentity<AppUser>(options =>
+                        options.SignIn.RequireConfirmedAccount = false)
+                .AddEntityFrameworkStores<MyBlogDbContext>();
+builder.Services.AddIdentityServer().AddApiAuthorization<AppUser,MyBlogDbContext>();
+builder.Services.AddAuthentication().AddIdentityServerJwt();
+//<Identity>
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
@@ -28,6 +48,11 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+//<IdentityApp>
+app.UseIdentityServer();
+app.UseAuthentication();
+app.UseAuthorization();
+//</IdentityApp>
 
 app.MapRazorPages();
 app.MapControllers();

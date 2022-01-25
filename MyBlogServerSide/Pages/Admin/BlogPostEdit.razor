@@ -4,6 +4,7 @@
 @inject NavigationManager manager
 @using MyBlogServerSide.Components
 @using Markdig
+@attribute [Authorize]
 
 <EditForm Model="Post" OnValidSubmit="SavePost">
     <DataAnnotationsValidator />

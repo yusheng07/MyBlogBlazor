@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.EntityFrameworkCore;
 using MyBlog.Data;
 using MyBlog.Data.Interfaces;
+using MyBlog.Data.Models;
+using MyBlogServerSide.Authentication;
 using MyBlogServerSide.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,9 +14,21 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
-builder.Services.AddDbContextFactory<MyBlogDbContext>(options => 
-    options.UseSqlite($"Data Source = ../MyBlog.db"));
+
+//<AddMyBlogDataServices>
+builder.Services.AddDbContextFactory<MyBlogDbContext>(options =>
+                        options.UseSqlite(builder.Configuration.GetConnectionString("MyBlogDB")));
 builder.Services.AddScoped<IMyBlogApi, MyBlogApiServerSide>();
+//<AddMyBlogDataServices>
+
+//<Authentication>
+builder.Services.AddDbContext<MyBlogDbContext>(options =>
+                        options.UseSqlite(builder.Configuration.GetConnectionString("MyBlogDB")));
+builder.Services.AddDefaultIdentity<AppUser>(options =>
+                        options.SignIn.RequireConfirmedAccount=true)
+                .AddEntityFrameworkStores<MyBlogDbContext>();
+builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<AppUser>>();
+//<Authentication>
 
 var app = builder.Build();
 
@@ -33,6 +48,9 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");

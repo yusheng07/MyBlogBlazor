@@ -1,6 +1,8 @@
 ﻿@page "/admin/tags"
 @using MyBlogServerSide.Components
 @inject IMyBlogApi api
+@attribute [Authorize]
+
 <h3>Tags</h3>
 
 <EditForm OnValidSubmit="Save" Model="Item">

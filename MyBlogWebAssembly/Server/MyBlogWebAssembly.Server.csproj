@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\MyBlog.Data\MyBlog.Data.csproj" />
     <ProjectReference Include="..\Client\MyBlogWebAssembly.Client.csproj" />
     <ProjectReference Include="..\Shared\MyBlogWebAssembly.Shared.csproj" />
   </ItemGroup>
