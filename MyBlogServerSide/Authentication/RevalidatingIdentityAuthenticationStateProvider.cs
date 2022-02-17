@@ -12,9 +12,11 @@ namespace MyBlogServerSide.Authentication
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IdentityOptions _options;
 
-        public RevalidatingIdentityAuthenticationStateProvider(ILoggerFactory loggerFactory,
+        public RevalidatingIdentityAuthenticationStateProvider(
+            ILoggerFactory loggerFactory,
             IServiceScopeFactory scopeFactory,
-            IOptions<IdentityOptions> optionsAccessor) : base(loggerFactory)
+            IOptions<IdentityOptions> optionsAccessor) 
+            : base(loggerFactory)
         {
             _scopeFactory = scopeFactory;
             _options = optionsAccessor.Value;
@@ -22,7 +24,8 @@ namespace MyBlogServerSide.Authentication
 
         protected override TimeSpan RevalidationInterval => TimeSpan.FromMinutes(30);
 
-        protected override async Task<bool> ValidateAuthenticationStateAsync(AuthenticationState authenticationState, CancellationToken cancellationToken)
+        protected override async Task<bool> ValidateAuthenticationStateAsync(
+            AuthenticationState authenticationState, CancellationToken cancellationToken)
         {
             // Get the user manager from a new scope to ensure it fetches fresh data
             var scope = _scopeFactory.CreateScope();

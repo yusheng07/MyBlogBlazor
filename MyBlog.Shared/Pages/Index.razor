@@ -1,0 +1,93 @@
+﻿@page "/"
+@using MyBlog.Data.Interfaces
+@using MyBlog.Data.Models
+@inject IMyBlogApi api
+@inject AuthenticationStateProvider authState
+
+@*from wasm*@
+<PageTitle>Index</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+<AuthorizeView>
+    <Authorized>
+       <p>@(context.User.Claims.FirstOrDefault(c=>c.Type == "role")?.Value??"No role!")</p>
+        <ul>
+            @foreach (var claim in @context.User.Claims)
+           {
+                <li>
+                   Type: @claim.Type, Value: @claim.Value
+                </li>
+           }
+       </ul>
+    </Authorized>
+</AuthorizeView>
+
+<AuthorizeView Roles="Administrator">
+    <Authorized>
+        @context.User.Identity.Name … You are an admin!
+    </Authorized>
+    <NotAuthorized>
+        @context.User.Identity.Name … Not logged in or not administrator! 
+    </NotAuthorized>
+</AuthorizeView>
+@*from wasm*@
+
+<button @onclick="AddSomePosts"> Add Some Posts</button>
+<ul>
+    @*@foreach (var item in posts)
+    {
+        <li>
+            <a href="/Post/@item.Id">@item.Title</a>
+        </li>
+    }*@
+    @*<Virtualize Items="posts" Context="item">*@
+    <Virtualize ItemsProvider="LoadPosts" Context="item">
+        <li>
+            <a href="/Post/@item.Id">@item.Title</a>
+        </li>
+    </Virtualize>
+</ul>
+
+@code {
+    //private List<BlogPost> posts = new List<BlogPost>();
+
+    //protected override async Task OnInitializedAsync()
+    //{
+    //    posts = await api.GetBlogPostsAsync(10,0);
+    //    await base.OnInitializedAsync();
+    //}
+
+    private int totalBlogposts { get; set; }
+
+    private async ValueTask<ItemsProviderResult<BlogPost>> LoadPosts(ItemsProviderRequest request)
+    {
+        if (totalBlogposts==0)
+        {
+            //store how many posts currently have in DB
+            totalBlogposts = await api.GetBlogPostCountAsync();
+        }
+        //figure out how many posts we should get; 
+        // either we get as many posts as we need, or we get all the posts that are remaining
+        var numblogposts = Math.Min(request.Count, totalBlogposts-request.StartIndex);
+        //get the actual posts
+        var blogPosts = await api.GetBlogPostsAsync(numblogposts,request.StartIndex);
+        //
+        return new ItemsProviderResult<BlogPost>(blogPosts,totalBlogposts);
+    }
+
+    protected async Task AddSomePosts()
+    {
+        for (var i = 1; i <= 10; i++)
+        {
+            await api.SaveBlogPostAsync(new BlogPost()
+                {
+                    PublishDate = DateTime.Now,
+                    Title = $"Blog post{i}",
+                    Text = "Text"
+                });
+        }
+    }
+}

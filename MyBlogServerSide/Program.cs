@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MyBlog.Data;
 using MyBlog.Data.Interfaces;
@@ -26,6 +27,8 @@ builder.Services.AddDbContext<MyBlogDbContext>(options =>
                         options.UseSqlite(builder.Configuration.GetConnectionString("MyBlogDB")));
 builder.Services.AddDefaultIdentity<AppUser>(options =>
                         options.SignIn.RequireConfirmedAccount=true)
+                //the server will send roles over the client
+                .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<MyBlogDbContext>();
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<AppUser>>();
 //<Authentication>

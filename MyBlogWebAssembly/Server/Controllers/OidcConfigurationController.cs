@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MyBlogWebAssembly.Server.Controllers
 {
+    //A controller for Open ID Connect
+    //This controller is responsible for sending the token to the client when the client requesets it.
     public class OidcConfigurationController : Controller
     {
         private readonly ILogger<OidcConfigurationController> _logger;

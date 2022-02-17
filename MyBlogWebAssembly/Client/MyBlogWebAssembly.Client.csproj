@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\MyBlog.Shared\MyBlog.Shared.csproj" />
     <ProjectReference Include="..\Shared\MyBlogWebAssembly.Shared.csproj" />
   </ItemGroup>
 
