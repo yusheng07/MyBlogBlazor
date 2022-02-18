@@ -1,6 +1,8 @@
 ﻿@page "/"
+@using Markdig
 @using MyBlog.Data.Interfaces
 @using MyBlog.Data.Models
+@using System.Text.RegularExpressions
 @inject IMyBlogApi api
 @inject AuthenticationStateProvider authState
 
@@ -35,7 +37,6 @@ Welcome to your new app.
 </AuthorizeView>
 @*from wasm*@
 
-<button @onclick="AddSomePosts"> Add Some Posts</button>
 <ul>
     @*@foreach (var item in posts)
     {
@@ -45,22 +46,28 @@ Welcome to your new app.
     }*@
     @*<Virtualize Items="posts" Context="item">*@
     <Virtualize ItemsProvider="LoadPosts" Context="item">
-        <li>
+        @*<li>
             <a href="/Post/@item.Id">@item.Title</a>
-        </li>
+        </li>*@
+        <article>
+            <h2>@item.Title</h2>
+            @((MarkupString)GetFirstParagraph(Markdig.Markdown.ToHtml(item.Text, pipeline)))
+            <br />
+            <a href="/Post/@item.Id">Read more</a>
+        </article>
     </Virtualize>
 </ul>
 
 @code {
     //private List<BlogPost> posts = new List<BlogPost>();
-
-    //protected override async Task OnInitializedAsync()
-    //{
-    //    posts = await api.GetBlogPostsAsync(10,0);
-    //    await base.OnInitializedAsync();
-    //}
-
+    private MarkdownPipeline pipeline;
     private int totalBlogposts { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley().Build();
+        await base.OnInitializedAsync();
+    }
 
     private async ValueTask<ItemsProviderResult<BlogPost>> LoadPosts(ItemsProviderRequest request)
     {
@@ -76,6 +83,19 @@ Welcome to your new app.
         var blogPosts = await api.GetBlogPostsAsync(numblogposts,request.StartIndex);
         //
         return new ItemsProviderResult<BlogPost>(blogPosts,totalBlogposts);
+    }
+
+    private string GetFirstParagraph(string html)
+    {
+        var m = Regex.Matches(html, @"<p>(.*?)</p>", RegexOptions.Singleline);
+        if (m.Count>0)
+        {
+            return m[0].Groups[1].Value;
+        }
+        else
+        {
+            return "";
+        }
     }
 
     protected async Task AddSomePosts()
