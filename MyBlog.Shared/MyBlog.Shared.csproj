@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Razor">
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -19,5 +19,9 @@
   <ItemGroup>
     <ProjectReference Include="..\MyBlog.Data.Shared\MyBlog.Data.Shared.csproj" />
   </ItemGroup>
+
+	<!--<ItemGroup>
+		<PackageReference Include="Microsoft.Web.LibraryManager.Build" Version="2.1.76" />
+	</ItemGroup>-->
 
 </Project>
