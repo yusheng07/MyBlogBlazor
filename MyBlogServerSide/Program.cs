@@ -6,8 +6,10 @@ using Microsoft.EntityFrameworkCore;
 using MyBlog.Data;
 using MyBlog.Data.Interfaces;
 using MyBlog.Data.Models;
+using MyBlog.Shared.Interfaces;
 using MyBlogServerSide.Authentication;
 using MyBlogServerSide.Data;
+using MyBlogServerSide.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +34,11 @@ builder.Services.AddDefaultIdentity<AppUser>(options =>
                 .AddEntityFrameworkStores<MyBlogDbContext>();
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<AppUser>>();
 //<Authentication>
+
+//<BrowserStorage>
+builder.Services.AddScoped<IBrowserStorage, MyBlogProtectedBrowserStorage>();
+//<BrowserStorage>
+
 
 var app = builder.Build();
 

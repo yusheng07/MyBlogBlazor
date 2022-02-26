@@ -1,6 +1,7 @@
 ﻿using MyBlog.Data.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
@@ -22,7 +23,7 @@ namespace MyBlog.Data.Models
         public DateTime PublishDate { get; set; }
         
         public Category? Category { get; set; }
-        
-        public ICollection<Tag> Tags { get; set; }
+
+        public ICollection<Tag> Tags { get; set; } = new Collection<Tag>();
     }
 }

@@ -2,6 +2,7 @@
 @page "/admin/blogposts/{Id:int}"
 @inject IMyBlogApi api
 @inject NavigationManager manager
+@inject Interfaces.IBrowserStorage storage 
 @*@using MyBlogServerSide.Components*@
 @using Markdig
 @attribute [Authorize]
@@ -45,7 +46,7 @@
             }           
         }
     </ul>
-    <InputTextAreaOnInput @bind-Value="Post.Text" @onkeyup="UpdateHTML"></InputTextAreaOnInput>
+    <InputTextAreaOnInput @bind-Value="Post.Text" @onkeyup="UpdateHTMLAsync"></InputTextAreaOnInput>
     <button class="btn btn-success" type="submit">Save</button>
 </EditForm>
 @((MarkupString)MarkDownAsHtml)
@@ -76,7 +77,16 @@
             {
                 SelectedCategory = Post.Category.Id;
             }
-            UpdateHTML();
+            UpdateHTMLAsync();
+        }
+        else
+        {
+            //to check whether have a file saved in browser storage
+            var saved = await storage.GetAsync<BlogPost>("EditCurrentPost");
+            if (saved!=null)
+            {
+                Post = saved;
+            }
         }
         Categories = await api.GetCategoriesAsync();
         Tags = await api.GetTagsAsync();
@@ -84,14 +94,28 @@
         await base.OnParametersSetAsync();
     }
 
-    protected void UpdateHTML()
+    //protected void UpdateHTML()
+    //{
+    //    MarkDownAsHtml = Markdig.Markdown.ToHtml(Post.Text, Pipeline);
+    //}
+
+    protected async Task UpdateHTMLAsync()
     {
-        MarkDownAsHtml = Markdig.Markdown.ToHtml(Post.Text, Pipeline);
+        if (Post.Text != null)
+        {
+            MarkDownAsHtml = Markdig.Markdown.ToHtml(Post.Text, Pipeline);
+            if (Post.Id == 0)
+            {
+                await storage.SetAsync("EditCurrentPost",Post);
+            }
+        }
     }
+
     bool HasTag(Tag tag)
     {
         return Post.Tags.Contains(tag);
     }
+
     protected async Task SavePost()
     {
         if (SelectedCategory!=0 && Categories!=null)

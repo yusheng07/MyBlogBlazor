@@ -5,6 +5,9 @@ using MyBlog.Data;
 using MyBlog.Data.Interfaces;
 using MyBlogWebAssembly.Client;
 using MyBlogWebAssembly.Client.Authentication;
+using Blazored.SessionStorage;
+using MyBlog.Shared.Interfaces;
+using MyBlogWebAssembly.Client.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -21,5 +24,14 @@ builder.Services.AddApiAuthorization()
 
 
 builder.Services.AddScoped<IMyBlogApi, MyBlogApiClientSide>();
+
+//<BlazoredSessionStorage>
+builder.Services.AddBlazoredSessionStorage(options=>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+    });
+builder.Services.AddScoped<IBrowserStorage, MyBlogBrowserStorage>();
+//<BlazoredSessionStorage>
 
 await builder.Build().RunAsync();
