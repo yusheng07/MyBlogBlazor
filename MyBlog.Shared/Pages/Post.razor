@@ -1,7 +1,10 @@
 ﻿@page "/post/{BlogPostId:int}"
 @inject IMyBlogApi api
 @inject NavigationManager navman
+@inject IBlogNotificationService notificationService
 @using Markdig
+@using MyBlog.Shared.Interfaces
+@implements IDisposable
 
 @if (blogPost!=null)
 {
@@ -32,6 +35,7 @@
     protected override Task OnInitializedAsync()
     {
         Pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley().Build();
+        notificationService.BlogPostChanged += PostChanged;
         return base.OnInitializedAsync();
     }
 
@@ -39,5 +43,19 @@
     {
         blogPost = await api.GetBlogPostAsync(blogPostId);
         await base.OnParametersSetAsync();
+    }
+
+    private async void PostChanged(BlogPost post)
+    {
+        if (blogPost.Id == post.Id)
+        {
+            blogPost = post;
+            await InvokeAsync(()=>this.StateHasChanged());
+        }
+    }
+
+    void IDisposable.Dispose() //stop listening to the updates by implementing the Dispose method
+    {
+        notificationService.BlogPostChanged -= PostChanged;
     }
 }

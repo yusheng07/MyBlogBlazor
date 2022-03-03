@@ -3,8 +3,10 @@
 @inject IMyBlogApi api
 @inject NavigationManager manager
 @inject Interfaces.IBrowserStorage storage 
+@inject IBlogNotificationService notificationService
 @*@using MyBlogServerSide.Components*@
 @using Markdig
+@using MyBlog.Shared.Interfaces
 @attribute [Authorize]
 
 <EditForm Model="Post" OnValidSubmit="SavePost">
@@ -108,6 +110,7 @@
             {
                 await storage.SetAsync("EditCurrentPost",Post);
             }
+            await notificationService.SendNotification(Post);
         }
     }
 

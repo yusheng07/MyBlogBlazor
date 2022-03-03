@@ -39,6 +39,10 @@ builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuth
 builder.Services.AddScoped<IBrowserStorage, MyBlogProtectedBrowserStorage>();
 //<BrowserStorage>
 
+//<NotificationService>
+builder.Services.AddSingleton<IBlogNotificationService, BlazorServerBlogNotificationService > ();
+//<NotificationService>
+
 
 var app = builder.Build();
 

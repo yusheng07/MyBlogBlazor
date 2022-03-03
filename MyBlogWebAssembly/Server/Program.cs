@@ -11,10 +11,19 @@ using Microsoft.AspNetCore.Identity;
 //<IdentityServerUsing>
 
 using System.Text.Json.Serialization;
+using MyBlogWebAssembly.Server.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+//<SignalR-1>
+builder.Services.AddSignalR().AddJsonProtocol(options => {
+    options.PayloadSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+    options.PayloadSerializerOptions.PropertyNamingPolicy = null;
+});
+//<SignalR-1>
+
 //<AddMyBlogDataServices>
 builder.Services.AddDbContextFactory<MyBlogDbContext>(options =>
                         options.UseSqlite(builder.Configuration.GetConnectionString("MyBlogDB")));
@@ -59,6 +68,13 @@ builder.Services.AddControllersWithViews();
                 //});
 builder.Services.AddRazorPages();
 
+//<SignalR-2>
+builder.Services.AddResponseCompression(options => {
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "application/octet-stream" }) ;
+});
+//<SignalR-2>
+
 // Set the JSON serializer options
 builder.Services.Configure<System.Text.Json.JsonSerializerOptions>(options =>
 {
@@ -95,6 +111,12 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 app.MapControllers();
+
+//<SignalR-4>
+//configure what URL [BlogNotificationHub] should use
+app.MapHub<BlogNotificationHub>("/BlogNotificationHub");
+//<SignalR-4>
+
 app.MapFallbackToFile("index.html");
 
 app.Run();

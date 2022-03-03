@@ -34,4 +34,8 @@ builder.Services.AddBlazoredSessionStorage(options=>
 builder.Services.AddScoped<IBrowserStorage, MyBlogBrowserStorage>();
 //<BlazoredSessionStorage>
 
+//<SignalR>
+builder.Services.AddSingleton<IBlogNotificationService, BlazorWasmBlogNotificationService>();
+//<SignalR>
+
 await builder.Build().RunAsync();
