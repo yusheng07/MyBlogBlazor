@@ -52,7 +52,7 @@ namespace TmtsChecker.Data
                     {
                         if (lineContext.Contains($"start {scannerName}"))
                         {
-                            currScanResult.Status = ScanStatus.Scaning;
+                            currScanResult.Status = ScanStatus.Scanning;
                         }
                         else if (lineContext.Contains("compression"))
                         {

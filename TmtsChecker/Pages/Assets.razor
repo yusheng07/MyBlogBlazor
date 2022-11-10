@@ -1,0 +1,61 @@
+﻿@page "/assets"
+@using TmtsChecker.DB
+@inject ITmtsDataApi api
+@inject ISnackbar Snackbar
+
+<h3>Assets</h3>
+
+<MudGrid>
+    <MudItem xs="12" sm="6" md="6">
+        <MudTextField @bind-Value="hosts" Label="Host List" Variant="Variant.Outlined" Lines="20"
+            @onblur="SetCntAsync"></MudTextField>
+    </MudItem>
+    <MudItem xs="12" sm="3" md="3">
+        <MudAlert Severity="Severity.Info">
+			@if (this.hostCnt != 0)
+            {
+                <p>Host Count: @hostCnt</p>                
+            }
+        </MudAlert>
+        <div class="p-1"><button class="btn btn-outline-danger" @onclick="SaveHosts"><span class="oi oi-task"> Save</span></button></div>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private string hosts;
+    private int hostCnt;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var hostList = await api.GetHostsAsync();
+        hostCnt = hostList.Count();
+        hosts = string.Join("\n", hostList.Select(item => item.Hostname));
+        //
+        await base.OnInitializedAsync();
+    }
+
+    private async Task SetCntAsync()
+    {
+        var newhosts = hosts.Split("\n").Distinct()
+                            .Where(item=>!string.IsNullOrWhiteSpace(item))
+                            .Select(item=>item.ToUpper())
+                            .OrderBy(item=>item);
+        hostCnt = newhosts.Count();
+        hosts = string.Join("\n", newhosts);
+    }
+
+    private async Task SaveHosts()
+    {
+        var newhosts = hosts.Split("\n").Distinct()
+                            .Where(item => !string.IsNullOrWhiteSpace(item))
+                            .Select(item => item.ToUpper())
+                            .OrderBy(item => item);
+        hostCnt = newhosts.Count();
+        hosts = string.Join("\n", newhosts);
+        //
+        await api.ReplaceHostsAsync(newhosts.ToList());
+        //
+        Snackbar.Add($"Hosts update success! Count:{(await api.GetHostsAsync()).Count()}", Severity.Warning);
+    }
+
+}

@@ -1,12 +1,21 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.EntityFrameworkCore;
 using TmtsChecker.Data;
 using MudBlazor.Services;
 using MudBlazor;
+using TmtsChecker.DB;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+//<AddTmtsDataServices>
+builder.Services.AddDbContextFactory<TmtsDbContext>(options => 
+                        options.UseSqlite(builder.Configuration.GetConnectionString("TmtsDB")));
+builder.Services.AddScoped<ITmtsDataApi, TmtsDataApi>();
+//<AddTmtsDataServices>
+
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices(config =>

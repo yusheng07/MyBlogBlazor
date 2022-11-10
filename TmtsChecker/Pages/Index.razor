@@ -2,6 +2,8 @@
 
 @using TmtsChecker.Data
 @using TmtsChecker.Models
+@using TmtsChecker.DB
+@inject ITmtsDataApi api
 @inject IScanResultService TmdResultService
 @inject ISnackbar Snackbar
 
@@ -45,17 +47,39 @@ else
                 <MudChart ChartType="ChartType.Donut" InputData="@donutDataList.ToArray()" @bind-SelectedIndex="donut_Index" InputLabels="@donutLabelList.ToArray()"  />
             </MudPaper>
         </div>
-        <div class="col-sm-8">
+        <div class="col-sm-8">           
+            <MudPaper Class="pa-4 ma-1" Elevation="3">        
+                <MudAlert Severity="Severity.Info">
+                    Lost Lambs (@assetList_missing.Count())
+                </MudAlert>
+                    @foreach (var missingItem in assetList_missing)
+                    {
+                        <MudChip Variant="Variant.Outlined">
+                            @missingItem
+                        </MudChip>
+                    }
+            </MudPaper>      
             @foreach (var scanStatus in Enum.GetValues<ScanResult.ScanStatus>())
             {        
                 <MudPaper Class="pa-4 ma-1" Elevation="3">        
                     <MudAlert Severity="Severity.Info">
                         @scanStatus (@scanItemList.Where(item=>item.Status==scanStatus).Count())
                     </MudAlert>
-                    @foreach (var scanItem in scanItemList.Where(item=>item.Status==scanStatus))
-                    {
-                        <MudChip title="@scanItem.Ip">@scanItem.Hostname</MudChip>        
-                    }
+                        @foreach (var scanItem in scanItemList.Where(item=>item.Status==scanStatus))
+                        {
+                            @if (@scanItem.IsAsset)
+                            {
+                                <MudChip title="@scanItem.Ip" Variant="Variant.Outlined">
+                                    @scanItem.Hostname
+                                </MudChip>
+                            }
+                            else
+                            {
+                                <MudChip title="@scanItem.Ip">
+                                    @scanItem.Hostname
+                                </MudChip>
+                            }
+                        }
                 </MudPaper>        
             }
         </div>
@@ -91,12 +115,14 @@ else
 
 @code {
     private Timer timer;
-    private int timerInterval=10000;
+    private int timerInterval=30*1000;
     private bool isTmd;
 
+    //private IEnumerable<string> assetList;
+    private List<string> assetList_missing = new List<string>();
     private List<ScanResult> scanItemList;
     //private bool isTmd = true;
-    private string tmdResultFolder = @"C:\Users\user\Downloads\TMTS_2022_AK\TMD_Result";
+    private string tmdResultFolder = @"C:\Users\user\Desktop\TMD_NISOC2022";
     private string tsdResultFolder = @"C:\Users\user\Downloads\TMTS_2022_AK\TSD_Result";
 
     private int pie_Index = -1; //default value cannot be 0 -> first selectedindex is 0.
@@ -112,11 +138,11 @@ else
         isTmd = true;        
         //use timer to upload the data periodically
         timer = new Timer(async (object stateInfo) =>
-            {                
+            {
                 await getScanItemList(isTmd);
-            // Note that the following line is necessary because otherwise
-            // Blazor would not recognize the state change and not refresh the UI
-            await InvokeAsync(() =>
+                // Note that the following line is necessary because otherwise
+                // Blazor would not recognize the state change and not refresh the UI
+                await InvokeAsync(() =>
                     {
                         StateHasChanged();
                     });
@@ -130,6 +156,17 @@ else
         this.isTmd = isTmd;
         scanItemList = await (isTmd ? TmdResultService.ScanFolderAsync(tmdResultFolder, "aptcheck.exe", ".zip")
                                     : TmdResultService.ScanFolderAsync(tsdResultFolder, "ThreatSonar.exe", ".report_bundle"));
+        //compare w/ asset list
+        var assetList = (await api.GetHostsAsync()).Select(item=>item.Hostname);
+        assetList_missing = assetList.ExceptBy(scanItemList.Select(item => item.Hostname), name => name).ToList();
+        foreach (var item in scanItemList)
+        {
+            if (assetList.Contains(item.Hostname)) //itme in asset list
+            {
+                item.IsAsset = true;
+            }
+        }
+
         //cnt for pie chart
         pieDataList.Clear();
         pieLabelList.Clear();
