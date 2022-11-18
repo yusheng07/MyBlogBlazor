@@ -1,0 +1,5 @@
+﻿<AuthorizeView>
+    <MudBadge Icon="@Icons.Material.Filled.Lock" Color="Color.Info" Overlap="true" Bordered="true">
+        <MudButton Color="Color.Tertiary" Variant="Variant.Filled" DisableElevation="true">@context.User.Identity?.Name!</MudButton>
+    </MudBadge>
+</AuthorizeView>
