@@ -1,7 +1,10 @@
 ﻿using HashWorkerBlazor.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using MudBlazor.Charts;
+using SQLitePCL;
 using System.Security.Principal;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
@@ -22,7 +25,8 @@ namespace HashWorkerBlazor.DB
         {
             //create seed data
             //modelBuilder.Entity<ListItem>().HasData(
-            //        new { Id=1, Account = "Test", CreateTime = DateTime.Now, FolderPath = "Test", HashListJson = "Test", CheckHash = "Test" }
+            //        new { Id = 1, Account = "Test", CreateTime = DateTime.Now, HashCount=0,
+            //                FolderPath = "Test", HashListJson = "Test", CheckHash = "Test" }
             //);
         }
     }
@@ -32,7 +36,7 @@ namespace HashWorkerBlazor.DB
     //    public HashWorkerDbContext CreateDbContext(string[] args)
     //    {
     //        var optionsBuilder = new DbContextOptionsBuilder<HashWorkerDbContext>();
-    //        optionsBuilder.UseSqlite("Data Source = ./TmtsDB.db"); //nuget install Microsoft.EntityFrameworkCore.Sqlite
+    //        //optionsBuilder.UseSqlite("Data Source = ./TmtsDB.db"); //nuget install Microsoft.EntityFrameworkCore.Sqlite            
     //        return new HashWorkerDbContext(optionsBuilder.Options);
     //    }
     //}

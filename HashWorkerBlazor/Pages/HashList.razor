@@ -16,7 +16,8 @@
 else
 {
     <MudTable Items="@itemList" Dense="true" Hover="true" Bordered="false" Striped="true"
-              RowsPerPage="10" LoadingProgressColor="Color.Info">
+              RowsPerPage="10" LoadingProgressColor="Color.Info"
+          Loading="@(isLoading_getData || isLoading_send)">
         <ToolBarContent>
             <MudText Typo="Typo.h6">Scan List
                 @if (!string.IsNullOrWhiteSpace(dbSizeStr))
@@ -64,13 +65,17 @@ else
     private readonly string localDbPath = "./HashWorkerDB.db";
     private string dbSizeStr = string.Empty;
     private List<ListItem> itemList = new List<ListItem>();
+    private bool isLoading_getData = false;
     private bool isLoading_send = false;
     private int curr_Idx = 0;
 
     protected override async Task OnInitializedAsync()
     {
+        isLoading_getData = true;
         itemList = (await api.GetListItemsAsync());
-        dbSizeStr = GetDbSize();
+        isLoading_getData = false;
+
+        //dbSizeStr = GetDbSize();
         //
         await base.OnInitializedAsync();
     }
