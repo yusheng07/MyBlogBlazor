@@ -105,7 +105,7 @@ else
                             else
                             {
                                 <MudChip title="@scanItem.Ip"
-                         OnClick="@(()=>ClipboardService.CopyToClipboard($"{scanItem.Hostname}{Environment.NewLine}{scanItem.Ip}"))">
+                                    OnClick="@(()=>ClipboardService.CopyToClipboard($"{scanItem.Hostname}{Environment.NewLine}{scanItem.Ip}"))">
                                     @scanItem.Hostname
                                 </MudChip>
                             }
