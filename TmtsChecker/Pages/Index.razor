@@ -6,6 +6,7 @@
 @inject ITmtsDataApi api
 @inject IScanResultService TmdResultService
 @inject ISnackbar Snackbar
+@inject IClipboardService ClipboardService
 
 <PageTitle>Index</PageTitle>
 
@@ -81,7 +82,7 @@ else
                 </MudAlert>
                     @foreach (var missingItem in assetList_missing)
                     {
-                        <MudChip Variant="Variant.Outlined">
+                        <MudChip Variant="Variant.Outlined" OnClick="@(()=>ClipboardService.CopyToClipboard(@missingItem))">
                             @missingItem
                         </MudChip>
                     }
@@ -96,13 +97,15 @@ else
                         {
                             @if (@scanItem.IsAsset)
                             {
-                                <MudChip title="@scanItem.Ip" Variant="Variant.Outlined">
+                                <MudChip title="@scanItem.Ip" Variant="Variant.Outlined"
+                                    OnClick="@(()=>ClipboardService.CopyToClipboard($"{scanItem.Hostname}{Environment.NewLine}{scanItem.Ip}"))">
                                     @scanItem.Hostname
                                 </MudChip>
                             }
                             else
                             {
-                                <MudChip title="@scanItem.Ip">
+                                <MudChip title="@scanItem.Ip"
+                         OnClick="@(()=>ClipboardService.CopyToClipboard($"{scanItem.Hostname}{Environment.NewLine}{scanItem.Ip}"))">
                                     @scanItem.Hostname
                                 </MudChip>
                             }

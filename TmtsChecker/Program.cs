@@ -16,6 +16,10 @@ builder.Services.AddDbContextFactory<TmtsDbContext>(options =>
 builder.Services.AddScoped<ITmtsDataApi, TmtsDataApi>();
 //<AddTmtsDataServices>
 
+//<AddClipboardService>
+builder.Services.AddScoped<IClipboardService, ClipboardService>();
+//<AddClipboardService>
+
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices(config =>
@@ -29,7 +33,6 @@ builder.Services.AddMudServices(config =>
         //config.SnackbarConfiguration.ShowTransitionDuration = 500;
         //config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
     });
-builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddSingleton<IScanResultService,TmdResultService>();
 
 var app = builder.Build();
