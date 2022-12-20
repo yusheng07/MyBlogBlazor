@@ -6,6 +6,7 @@
         public string Hash { get; set; }
         public string FileName { get; set; }
         public string FilePath { get; set; }
+        public int FileSize { get; set; }
         public ListItem? ListItem { get; set; }
     }
 }

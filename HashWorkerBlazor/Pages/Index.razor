@@ -2,6 +2,7 @@
 
 @using System.Diagnostics
 @using HashWorkerBlazor.DB
+@using HashWorkerBlazor.JSInterop
 @using HashWorkerBlazor.Models
 @using System.Text
 @using System.Text.Json
@@ -11,16 +12,24 @@
 @inject ISnackbar Snackbar
 @inject IHashWorkerApi api
 @inject AuthenticationStateProvider authenticationStateProvider
+@inject IJSRuntime jsRuntime
 
 <PageTitle>Index</PageTitle>
 
 <MudGrid>
-    <MudItem xs="12" sm="6" md="6">
-        <MudTextField @bind-Value="scanPath" Label="Path to Scan" Variant="Variant.Outlined"></MudTextField>        
+    <MudItem xs="12" sm="8" md="8">
+        <MudPaper Class="pa-4 ma-1" Elevation="3">        
+            <MudAlert Severity="Severity.Info">
+                @hashResult
+            </MudAlert>
+            <div class="e-upload e-control-wrapper e-lib e-keyboard">
+                <input type="file" id="filepicker" name="fileList" class="e-file-select-wrap e-upload-browse-btn" webkitdirectory multiple />
+            </div>
+        </MudPaper>    
     </MudItem>
 </MudGrid>
 <div class="p-1">
-    <MudButton Disabled="@(isLoading_scan || isLoading_send)" Variant="Variant.Filled" StartIcon="@Icons.Custom.Uncategorized.Radioactive" Color="Color.Warning" OnClick="@ScanBtnClick">
+@*    <MudButton Disabled="@(isLoading_scan || isLoading_send)" Variant="Variant.Filled" StartIcon="@Icons.Custom.Uncategorized.Radioactive" Color="Color.Warning" OnClick="@ScanBtnClick">
         @if (isLoading_scan)
         {
             <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
@@ -30,7 +39,7 @@
         {
             <MudText>Scan Folder🈲</MudText>
         }
-    </MudButton>
+    </MudButton>*@
     <MudButton Disabled="@(isLoading_scan || isLoading_send || itemList.Count()==0)" Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.Send" Color="Color.Primary" OnClick="@SendBtnClick">
         @if (isLoading_send)
         {
@@ -42,13 +51,14 @@
             <MudText>Send Hash</MudText>
         }
     </MudButton>
+    <MudToggleIconButton Toggled="@isShowConsole" Icon="@Icons.Material.Filled.AlarmOff" Color="@Color.Error" Title="Off"
+                         ToggledIcon="@Icons.Material.Filled.AlarmOn" ToggledColor="@Color.Success" ToggledTitle="On"
+                         ToggledChanged="OnToggledChanged"/>
+
+    <span>Console Message is @(isShowConsole ? "On" : "Off")</span>
 </div>
 
-@if (string.IsNullOrWhiteSpace(scanPath) || !Directory.Exists(scanPath))
-{
-    <p><em>Invalid Path😒😒</em></p>
-}
-else if(itemList == null)
+@if(itemList == null)
 {
     <p><em>Loading...😘😘</em></p>
 }
@@ -56,14 +66,10 @@ else
 {
     <MudTable Items="@itemList" Dense="true" Hover="true" Bordered="false" Striped="true"
           RowsPerPage="10" Loading="@(isLoading_scan || isLoading_send)" LoadingProgressColor="Color.Info">
-        <ToolBarContent>
-            <MudText Typo="Typo.h6">Hash List in @scanPath
-                @if (!string.IsNullOrWhiteSpace(scanResult))
-                {
-                    <MudChip Variant="Variant.Outlined" Color="Color.Success">@scanResult</MudChip>
-                }
+        @*<ToolBarContent>
+            <MudText Typo="Typo.h6">Hash List
             </MudText>
-        </ToolBarContent>
+        </ToolBarContent>*@
         <HeaderContent>
             <MudTh>No</MudTh>
             <MudTh>Hash</MudTh>
@@ -83,17 +89,93 @@ else
 }
 
 @code {
-    private string scanPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-    private string scanResult = string.Empty;
+
+    private DotNetObjectReference<Index>? dotNetHelper;
+    private int totalCnt = 0, currCnt = 0;
+    private string hashResult = "drop your folder below😘😘";
+    private bool isShowConsole = false;
+
     private List<HashContent> itemList = new List<HashContent>();
     private bool isLoading_scan = false;
     private bool isLoading_send = false;
-
+    Stopwatch sw = new Stopwatch();
 
     protected override async Task OnInitializedAsync()
     {
-        //
         await base.OnInitializedAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            dotNetHelper = DotNetObjectReference.Create(this);
+            await jsRuntime.InvokeVoidAsync("Md5Helper.setDotNetHelper", dotNetHelper);
+            await jsRuntime.InvokeVoidAsync("Md5Helper.setIsShowConsole", isShowConsole);
+            await jsRuntime.InvokeVoidAsync("Md5Helper.setInputComponent");
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public async void OnToggledChanged(bool toggled)
+    {
+        // Because variable is not two-way bound, we need to update it ourself
+        isShowConsole = toggled;
+
+        await jsRuntime.InvokeVoidAsync("Md5Helper.setIsShowConsole", isShowConsole);
+    }
+
+    [JSInvokable]
+    public async void JsSendFileCntAsync(int arrLen)
+    {
+        currCnt = 0; 
+        totalCnt = arrLen;
+
+        hashResult = $"found {totalCnt:N0} files";
+        itemList.Clear();
+        isLoading_scan = true;
+        
+        sw.Restart();
+    }
+
+    [JSInvokable]
+    public async void JsSendFileHashAsync(string fileName, string filePath, int fileSize, string fileHash)
+    {
+        currCnt++;
+        //
+        hashResult = $"{currCnt:N0}/{totalCnt:N0}";
+
+        //TODO: rewrite the code below!
+        itemList.Add(new HashContent
+            {
+                No = currCnt,
+                FileName = fileName,
+                FilePath = filePath,
+                FileSize = fileSize,
+                Hash = fileHash
+            });
+
+        if (totalCnt<100 || currCnt % 10 == 0)
+        {
+            await InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        }
+
+        //When all complete!
+        if (currCnt == totalCnt)
+        {
+            sw.Stop();
+            Snackbar.Add(hashResult = $"{itemList.Count():N0} rows updated in {sw.Elapsed.TotalSeconds:N2}s!", Severity.Warning);
+            //
+            isLoading_scan = false;
+            //
+            await InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        }
     }
 
     private async Task SendBtnClick()
@@ -110,96 +192,94 @@ else
         //
         var json=JsonSerializer.Serialize<List<HashContent>>(itemList, new JsonSerializerOptions{ Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping});
         var account = (await authenticationStateProvider.GetAuthenticationStateAsync()).User.Identity?.Name ?? string.Empty;
-        var result = await api.SendListAsync(account, scanPath, json, SHA1Encrypt.genStrHash(json), itemList.Count());
+        var result = await api.SendListAsync(account, json, SHA1Encrypt.genStrHash(json), itemList.Count());
         //
         Snackbar.Add(result.msg, result.isOk ? Severity.Warning : Severity.Error);
         //
         isLoading_send = false;
     }
 
-    private async Task ScanBtnClick()
-    {
-        if (!Directory.Exists(scanPath))
-        {
-            Snackbar.Add(scanResult = "Non-valid folder path!", Severity.Error);
-            return;
-        }
-        //
-        scanResult = string.Empty;
-        itemList.Clear();
-        isLoading_scan = true;
-        //
-        await Task.Delay(1);
-        //
-        Stopwatch sw = new Stopwatch();
-        //
-        //method 1: calc hash after the whole select run and use parallel func.
-        sw.Start();
-        itemList = new DirectoryInfo(scanPath)
-                    .GetFiles("*", SearchOption.AllDirectories)
-                    .Select((fileInfo, idx) => new HashContent
-                        {
-                            No = idx + 1,                
-                            FileName = fileInfo.Name,
-                            FilePath = fileInfo.FullName
-                        })
-                    .ToList();
-        Parallel.ForEach(itemList, item => {
-            try
-            {
-                //item.Hash = BitConverter.ToString(SHA1.Create().ComputeHash(File.OpenRead(item.FilePath))).Replace("-", "");
-                item.Hash = SHA1Encrypt.genFileHash(item.FilePath);
-            }
-            catch (Exception ex)
-            {
-                item.Hash = $"err msg:{ex.Message}";
-            }
-            item.FilePath = $"~{item.FilePath.Substring(scanPath.Length)}";
-        });
-        sw.Stop();
-        Snackbar.Add(scanResult = $"{itemList.Count():N0} rows updated in {sw.Elapsed.TotalSeconds:N2}s!", Severity.Warning);
+    //private async Task ScanBtnClick()
+    //{
+    //    if (!Directory.Exists(scanPath))
+    //    {
+    //        Snackbar.Add(scanResult = "Non-valid folder path!", Severity.Error);
+    //        return;
+    //    }
+    //    //
+    //    scanResult = string.Empty;
+    //    itemList.Clear();
+    //    isLoading_scan = true;
+    //    //
+    //    await Task.Delay(1);
+    //    //
+    //    Stopwatch sw = new Stopwatch();
+    //    //
+    //    //method 1: calc hash after the whole select run and use parallel func.
+    //    sw.Start();
+    //    itemList = new DirectoryInfo(scanPath)
+    //                .GetFiles("*", SearchOption.AllDirectories)
+    //                .Select((fileInfo, idx) => new HashContent
+    //                    {
+    //                        No = idx + 1,                
+    //                        FileName = fileInfo.Name,
+    //                        FilePath = fileInfo.FullName
+    //                    })
+    //                .ToList();
+    //    Parallel.ForEach(itemList, item => {
+    //        try
+    //        {
+    //            //item.Hash = BitConverter.ToString(SHA1.Create().ComputeHash(File.OpenRead(item.FilePath))).Replace("-", "");
+    //            item.Hash = SHA1Encrypt.genFileHash(item.FilePath);
+    //        }
+    //        catch (Exception ex)
+    //        {
+    //            item.Hash = $"err msg:{ex.Message}";
+    //        }
+    //        item.FilePath = $"~{item.FilePath.Substring(scanPath.Length)}";
+    //    });
+    //    sw.Stop();
+    //    Snackbar.Add(scanResult = $"{itemList.Count():N0} rows updated in {sw.Elapsed.TotalSeconds:N2}s!", Severity.Warning);
 
-        //
-        isLoading_scan = false;
+    //    //
+    //    isLoading_scan = false;
 
-        //method 2: calc hash in each select run
-        //sw.Restart();
-        //using (SHA1 sha1 = SHA1.Create())
-        //{
-        //    itemList = new DirectoryInfo(scanPath)
-        //    .GetFiles("*", SearchOption.AllDirectories)
-        //    .Select((fileInfo, idx) => new HashContent
-        //        {
-        //            No = idx + 1,
-        //            Hash = BitConverter.ToString(sha1.ComputeHash(fileInfo.OpenRead())).Replace("-", ""),
-        //            FileName = fileInfo.Name,
-        //            FilePath = $"~{fileInfo.FullName.Substring(scanPath.Length)}"
-        //        })
-        //    .ToList();
-        //}
-        //sw.Stop();
-        //Snackbar.Add($"{itemList.Count()} rows updated! in {sw.Elapsed.TotalSeconds}s", Severity.Warning);
-
-
-        //method 3: calc hash in each select run with async/await, then whenAll waiting
-        //sw.Restart();
-        //itemList = (await Task.WhenAll<HashContent>(
-        //                    new DirectoryInfo(scanPath)
-        //                        .GetFiles("*", SearchOption.AllDirectories)
-        //                        .Select(async (fileInfo, idx) => new HashContent
-        //                            {
-        //                                No = idx + 1,
-        //                                Hash = BitConverter.ToString(await SHA1.Create().ComputeHashAsync(fileInfo.OpenRead())).Replace("-", ""),
-        //                                FileName = fileInfo.Name,
-        //                                FilePath = $"~{fileInfo.FullName.Substring(scanPath.Length)}"
-        //                            })
-        //                    )
-        //            ).ToList();
-        //sw.Stop();
-        //Snackbar.Add($"{itemList.Count()} rows updated! in {sw.Elapsed.TotalSeconds}s", Severity.Warning);
-    }
+    //    //method 2: calc hash in each select run
+    //    //sw.Restart();
+    //    //using (SHA1 sha1 = SHA1.Create())
+    //    //{
+    //    //    itemList = new DirectoryInfo(scanPath)
+    //    //    .GetFiles("*", SearchOption.AllDirectories)
+    //    //    .Select((fileInfo, idx) => new HashContent
+    //    //        {
+    //    //            No = idx + 1,
+    //    //            Hash = BitConverter.ToString(sha1.ComputeHash(fileInfo.OpenRead())).Replace("-", ""),
+    //    //            FileName = fileInfo.Name,
+    //    //            FilePath = $"~{fileInfo.FullName.Substring(scanPath.Length)}"
+    //    //        })
+    //    //    .ToList();
+    //    //}
+    //    //sw.Stop();
+    //    //Snackbar.Add($"{itemList.Count()} rows updated! in {sw.Elapsed.TotalSeconds}s", Severity.Warning);
 
 
-    
+    //    //method 3: calc hash in each select run with async/await, then whenAll waiting
+    //    //sw.Restart();
+    //    //itemList = (await Task.WhenAll<HashContent>(
+    //    //                    new DirectoryInfo(scanPath)
+    //    //                        .GetFiles("*", SearchOption.AllDirectories)
+    //    //                        .Select(async (fileInfo, idx) => new HashContent
+    //    //                            {
+    //    //                                No = idx + 1,
+    //    //                                Hash = BitConverter.ToString(await SHA1.Create().ComputeHashAsync(fileInfo.OpenRead())).Replace("-", ""),
+    //    //                                FileName = fileInfo.Name,
+    //    //                                FilePath = $"~{fileInfo.FullName.Substring(scanPath.Length)}"
+    //    //                            })
+    //    //                    )
+    //    //            ).ToList();
+    //    //sw.Stop();
+    //    //Snackbar.Add($"{itemList.Count()} rows updated! in {sw.Elapsed.TotalSeconds}s", Severity.Warning);
+    //}
+
 
 }

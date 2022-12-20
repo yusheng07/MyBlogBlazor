@@ -6,6 +6,6 @@ namespace HashWorkerBlazor.DB
     {
         Task<List<ListItem>> GetListItemsAsync();        
         Task<(bool isOk, string msg)> ResendListAsync(int listIdx);
-        Task<(bool isOk, string msg)> SendListAsync(string account,string folderPath, string hashListJson,string checkHash, int hashCount);
+        Task<(bool isOk, string msg)> SendListAsync(string account, string hashListJson,string checkHash, int hashCount);
     }
 }

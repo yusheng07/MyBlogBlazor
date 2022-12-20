@@ -19,7 +19,7 @@ else
               RowsPerPage="10" LoadingProgressColor="Color.Info"
           Loading="@(isLoading_getData || isLoading_send)">
         <ToolBarContent>
-            <MudText Typo="Typo.h6">Scan List
+            <MudText Typo="Typo.h6">Hash List
                 @if (!string.IsNullOrWhiteSpace(dbSizeStr))
                 {
                     <MudChip Variant="Variant.Outlined" Color="Color.Success">@dbSizeStr</MudChip>
@@ -29,7 +29,7 @@ else
         <HeaderContent>
             <MudTh>Id</MudTh>
             <MudTh>Account</MudTh>
-            <MudTh>FolderPath</MudTh>
+            @*<MudTh>FolderPath</MudTh>*@
             <MudTh>CreateTime</MudTh>
             <MudTh>LastSendTime</MudTh>
             <MudTh>HashCount</MudTh>
@@ -50,7 +50,7 @@ else
                 </MudButton>
             </MudTd>
             <MudTd DataLabel="Account">@context.Account</MudTd>
-            <MudTd DataLabel="FolderPath">@context.FolderPath</MudTd>
+            @*<MudTd DataLabel="FolderPath">@context.FolderPath</MudTd>*@
             <MudTd DataLabel="CreateTime" HideSmall="true">@context.CreateTime</MudTd>
             <MudTd DataLabel="LastSendTime">@context.LastSendTime</MudTd>
             <MudTd DataLabel="HashCount" HideSmall="true">@context.HashCount.ToString("N0")</MudTd>

@@ -20,14 +20,41 @@
     </MudItem>
 </MudGrid>
 <div class="p-1">
-    <button class="btn btn-outline-danger"
-            @onclick="@(()=>getScanItemList(true))">
+@*    <button class="btn btn-outline-danger" @onclick="@(()=>getScanItemList(true))">
         <span class="oi oi-eye"> Show TM</span>
     </button>
-    <button class="btn btn-outline-danger"
-            @onclick="@(()=>getScanItemList(false))">
+    <button class="btn btn-outline-danger" @onclick="@(()=>getScanItemList(false))">
         <span class="oi oi-eye"> Show TS</span>
-    </button>
+    </button>*@
+    <MudButton Disabled="@(isLoading_tm || isLoading_ts)" Variant="Variant.Outlined" Color="Color.Primary"
+               EndIcon="@Icons.Material.Filled.Send" OnClick="@(()=>getScanItemList(true))">
+        @if (isLoading_tm)
+        {
+            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+            <MudText Class="ms-2">Processing</MudText>
+        }
+        else
+        {
+            <MudText>Scan TM</MudText>
+        }
+    </MudButton>
+    <MudButton Disabled="@(isLoading_tm || isLoading_ts)" Variant="Variant.Outlined" Color="Color.Primary"
+               EndIcon="@Icons.Material.Filled.Send" OnClick="@(()=>getScanItemList(false))">
+        @if (isLoading_ts)
+        {
+            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+            <MudText Class="ms-2">Processing</MudText>
+        }
+        else
+        {
+            <MudText>Scan TS</MudText>
+        }
+    </MudButton>
+    @if (!string.IsNullOrWhiteSpace(scanResult))
+    {
+        <MudChip Variant="Variant.Outlined" Color="Color.Success">@scanResult</MudChip>
+    }
+
 </div>
 
 
@@ -117,6 +144,9 @@ else
     private Timer timer;
     private int timerInterval=30*1000;
     private bool isTmd;
+    private bool isLoading_tm = false;
+    private bool isLoading_ts = false;
+    private string scanResult = string.Empty;
 
     //private IEnumerable<string> assetList;
     private List<string> assetList_missing = new List<string>();
@@ -153,39 +183,57 @@ else
 
     private async Task getScanItemList(bool isTmd)
     {
+        isLoading_tm = isTmd ? true : false;
+        isLoading_ts = isTmd ? false : true;
+        scanResult = "loading...";
+        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+        sw.Start();
+
         this.isTmd = isTmd;
         scanItemList = await (isTmd ? TmdResultService.ScanFolderAsync(tmdResultFolder, "aptcheck.exe", ".zip")
                                     : TmdResultService.ScanFolderAsync(tsdResultFolder, "ThreatSonar.exe", ".report_bundle"));
-        //compare w/ asset list
-        var assetList = (await api.GetHostsAsync()).Select(item=>item.Hostname);
-        assetList_missing = assetList.ExceptBy(scanItemList.Select(item => item.Hostname), name => name).ToList();
-        foreach (var item in scanItemList)
+        try
         {
-            if (assetList.Contains(item.Hostname)) //itme in asset list
+            //compare w/ asset list
+            var assetList = (await api.GetHostsAsync()).Select(item => item.Hostname);
+            assetList_missing = assetList.ExceptBy(scanItemList.Select(item => item.Hostname), name => name).ToList();
+            foreach (var item in scanItemList)
             {
-                item.IsAsset = true;
+                if (assetList.Contains(item.Hostname)) //itme in asset list
+                {
+                    item.IsAsset = true;
+                }
+            }
+
+            //cnt for pie chart
+            pieDataList.Clear();
+            pieLabelList.Clear();
+            foreach (var enumVal in Enum.GetValues<ScanResult.ScanStatus>())
+            {
+                pieDataList.Add(Convert.ToDouble(scanItemList.Where(sitem => sitem.Status == enumVal).Count()));
+                pieLabelList.Add(enumVal.ToString());
+            }
+            //cnt for donut chart
+            donutDataList.Clear();
+            donutLabelList.Clear();
+            foreach (var group in scanItemList.GroupBy(item => (item.Ip ?? string.Empty).Contains(".") ? item.Ip.Substring(0, item.Ip.LastIndexOf(".")) : "NAN"))
+            {
+                donutDataList.Add(Convert.ToDouble(group.Count()));
+                donutLabelList.Add(group.Key);
             }
         }
-
-        //cnt for pie chart
-        pieDataList.Clear();
-        pieLabelList.Clear();
-        foreach (var enumVal in Enum.GetValues<ScanResult.ScanStatus>())
+        catch (Exception ex)
         {
-            pieDataList.Add(Convert.ToDouble(scanItemList.Where(sitem=>sitem.Status==enumVal).Count()));
-            pieLabelList.Add(enumVal.ToString());
-        }
-        //cnt for donut chart
-        donutDataList.Clear();
-        donutLabelList.Clear();
-        foreach (var group in scanItemList.GroupBy(item=> (item.Ip??string.Empty).Contains(".") ? item.Ip.Substring(0,item.Ip.LastIndexOf(".")) : "NAN"))
-        {
-            donutDataList.Add(Convert.ToDouble(group.Count()));
-            donutLabelList.Add(group.Key);
+            scanResult = $"Parsing error! Error msg: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine(scanResult);
         }
         //
         timer.Change(timerInterval, timerInterval);
         Snackbar.Add($"Data updated :{DateTime.Now.ToString()}", Severity.Success);
+        //
+        isLoading_tm = isLoading_ts= false;
+        sw.Stop();
+        scanResult = $"Scan {scanItemList.Count():N0} items in {sw.Elapsed.TotalSeconds:N2} s";
     }
 }
 

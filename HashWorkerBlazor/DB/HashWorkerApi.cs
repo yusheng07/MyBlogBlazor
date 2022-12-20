@@ -62,12 +62,12 @@ namespace HashWorkerBlazor.DB
             return ValueTuple.Create(true, $"send item completed! idx:{listItem.Id}");
         }
 
-        public async Task<(bool isOk, string msg)> SendListAsync(string account, string folderPath, string hashListJson, string checkHash,int hashCount)
+        public async Task<(bool isOk, string msg)> SendListAsync(string account, string hashListJson, string checkHash,int hashCount)
         {
             using var context = factory.CreateDbContext();
 
             //TODO: 重複性判斷
-            var listItem = await context.ListItems.FirstOrDefaultAsync(m => m.FolderPath.Equals(folderPath) && m.CheckHash.Equals(checkHash));
+            var listItem = await context.ListItems.FirstOrDefaultAsync(m => m.CheckHash.Equals(checkHash));
             if (listItem != null)
             {
                 //return ValueTuple.Create(false, $"duplicate folder and hashList! idx:{listItem.Id}");
@@ -78,7 +78,6 @@ namespace HashWorkerBlazor.DB
                 new ListItem
                 {
                     Account = account,
-                    FolderPath = folderPath,
                     HashCount = hashCount,
                     CreateTime = DateTime.Now,
                     LastSendTime = DateTime.Now,

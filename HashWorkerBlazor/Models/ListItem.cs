@@ -12,8 +12,6 @@ namespace HashWorkerBlazor.Models
 
         public string Account { get; set; }
 
-        public string FolderPath { get; set; }
-
         public string HashListJson { get; set; }
 
         public int HashCount { get; set; }
