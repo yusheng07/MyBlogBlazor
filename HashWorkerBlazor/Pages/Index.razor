@@ -15,8 +15,10 @@
 @inject IHashWorkerApi api
 @inject AuthenticationStateProvider authenticationStateProvider
 @inject IJSRuntime jsRuntime
+@inject IDialogService DialogService
 
 <PageTitle>Index</PageTitle>
+
 
 <MudGrid>
     <MudItem xs="12" sm="8" md="8">
@@ -28,6 +30,9 @@
                 <input type="file" id="filepicker" name="fileList" class="e-file-select-wrap e-upload-browse-btn" webkitdirectory multiple />
             </div>
         </MudPaper>    
+    </MudItem>
+    <MudItem xs="12" sm="4" md="4">
+        <img height="111" src="@base64Img" onclick="@CropImageClick" />
     </MudItem>
 </MudGrid>
 <div class="p-1">
@@ -95,6 +100,7 @@ else
     private int totalCnt = 0, currCnt = 0;
     private string hashResult = "drop your folder below😘😘";
     private bool isShowConsole = false;
+    private string base64Img = string.Empty;
 
     private List<HashContent> itemList = new List<HashContent>();
     private bool isLoading_scan = false;
@@ -103,7 +109,7 @@ else
     Stopwatch sw = new Stopwatch();
 
     protected override async Task OnInitializedAsync()
-    {
+    {        
         await base.OnInitializedAsync();
     }
 
@@ -112,11 +118,28 @@ else
         if (firstRender)
         {
             dotNetHelper = DotNetObjectReference.Create(this);
+            //
             await jsRuntime.InvokeVoidAsync("Md5Helper.setDotNetHelper", dotNetHelper);
             await jsRuntime.InvokeVoidAsync("Md5Helper.setIsShowConsole", isShowConsole);
             await jsRuntime.InvokeVoidAsync("Md5Helper.setInputComponent");
+            //
+            await jsRuntime.InvokeVoidAsync("ClipboardHelper.setDotNetHelper", dotNetHelper);
+            await jsRuntime.InvokeVoidAsync("ClipboardHelper.setPasteImgHook");
         }
         await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async void CropImageClick()
+    {
+        if (string.IsNullOrWhiteSpace(this.base64Img))
+        {
+            return;
+        }
+        var parameters = new DialogParameters();
+        parameters.Add("Base64Img", this.base64Img);
+        DialogOptions maxWidth = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Large, FullWidth = true };
+        var dialogresult = DialogService.Show<DialogImg>(string.Empty, parameters);
+        var result = await dialogresult.Result;
     }
 
     public async Task GenerateExcel(IJSRuntime iJSRuntime)
@@ -179,6 +202,17 @@ else
         isShowConsole = toggled;
 
         await jsRuntime.InvokeVoidAsync("Md5Helper.setIsShowConsole", isShowConsole);
+    }
+
+    [JSInvokable]
+    public async void JsSendBase64ImgAsync(string dataURL)
+    {
+        base64Img = dataURL;
+        //
+        await InvokeAsync(() =>
+        {
+            StateHasChanged();
+        });
     }
 
     [JSInvokable]
@@ -270,7 +304,7 @@ else
         //
         var json=JsonSerializer.Serialize<List<HashContent>>(itemList, new JsonSerializerOptions{ Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping});
         var account = (await authenticationStateProvider.GetAuthenticationStateAsync()).User.Identity?.Name ?? string.Empty;
-        var result = await api.SendListAsync(account, json, SHA1Encrypt.genStrHash(json), itemList.Count());
+        var result = await api.SendListAsync(account, json, SHA1Encrypt.genStrHash(json), itemList.Count(), this.base64Img);
         //
         Snackbar.Add(result.msg, result.isOk ? Severity.Warning : Severity.Error);
         //

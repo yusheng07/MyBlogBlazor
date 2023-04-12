@@ -23,7 +23,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyBlog.Shared.Tests", "MyBl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HashWorkerBlazor", "HashWorkerBlazor\HashWorkerBlazor.csproj", "{A378F336-A7AD-4168-8F29-330A99580F54}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncfusionSetup", "SyncfusionSetup\SyncfusionSetup.csproj", "{022A2147-2119-42D9-A7BE-A96CF6E96ED2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncfusionSetup", "SyncfusionSetup\SyncfusionSetup.csproj", "{022A2147-2119-42D9-A7BE-A96CF6E96ED2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

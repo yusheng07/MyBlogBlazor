@@ -62,7 +62,7 @@ namespace HashWorkerBlazor.DB
             return ValueTuple.Create(true, $"send item completed! idx:{listItem.Id}");
         }
 
-        public async Task<(bool isOk, string msg)> SendListAsync(string account, string hashListJson, string checkHash,int hashCount)
+        public async Task<(bool isOk, string msg)> SendListAsync(string account, string hashListJson, string checkHash, int hashCount, string base64Img)
         {
             using var context = factory.CreateDbContext();
 
@@ -82,7 +82,8 @@ namespace HashWorkerBlazor.DB
                     CreateTime = DateTime.Now,
                     LastSendTime = DateTime.Now,
                     HashListJson = hashListJson,
-                    CheckHash = checkHash
+                    CheckHash = checkHash,
+                    Base64Img = base64Img
                 });
             await context.SaveChangesAsync();
 

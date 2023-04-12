@@ -6,6 +6,7 @@
 @using System.Text.Json;
 @inject ISnackbar Snackbar
 @inject IHashWorkerApi api
+@inject IDialogService DialogService
 
 <PageTitle>HashList</PageTitle>
 
@@ -28,6 +29,7 @@ else
         </ToolBarContent>
         <HeaderContent>
             <MudTh>Id</MudTh>
+            <MudTh>CropImg</MudTh>
             <MudTh>Account</MudTh>
             @*<MudTh>FolderPath</MudTh>*@
             <MudTh>CreateTime</MudTh>
@@ -48,6 +50,9 @@ else
                         <MudText>ReSend</MudText>
                     }
                 </MudButton>
+            </MudTd>
+            <MudTd DataLabel="Base64Img">
+                <img width="100" src="@context.Base64Img" alt="no img" onclick="@(()=>CropImageClick(context.Base64Img))" />
             </MudTd>
             <MudTd DataLabel="Account">@context.Account</MudTd>
             @*<MudTd DataLabel="FolderPath">@context.FolderPath</MudTd>*@
@@ -74,10 +79,23 @@ else
         isLoading_getData = true;
         itemList = (await api.GetListItemsAsync());
         isLoading_getData = false;
-
+        //
         //dbSizeStr = GetDbSize();
         //
         await base.OnInitializedAsync();
+    }
+
+    private async void CropImageClick(string base64Img)
+    {
+        if (string.IsNullOrWhiteSpace(base64Img))
+        {
+            return;
+        }
+        var parameters = new DialogParameters();
+        parameters.Add("Base64Img", base64Img);
+        DialogOptions maxWidth = new DialogOptions() { NoHeader = true, MaxWidth = MaxWidth.Large, FullWidth = true };
+        var dialogresult = DialogService.Show<DialogImg>(string.Empty, parameters);
+        var result = await dialogresult.Result;
     }
 
     private string GetDbSize()

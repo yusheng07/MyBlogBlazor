@@ -22,5 +22,7 @@ namespace HashWorkerBlazor.Models
 
         public DateTime? LastSendTime { get; set; } 
 
+        public string Base64Img { get; set; }
+
     }
 }
